@@ -39,7 +39,7 @@ where
                 .iter()
                 .map(|template| (template.name.as_str(), template)),
         );
-        let mut data_sources = vec![];
+        let mut data_sources: Vec<DataSource> = vec![];
 
         for stored in self.store.load_dynamic_data_sources(&deployment_id)? {
             let StoredDynamicDataSource {
@@ -70,6 +70,11 @@ where
                 creation_block,
                 templates: Vec::new(),
             };
+
+            // The data sources are ordered by the creation block.
+            // See also 8f1bca33-d3b7-4035-affc-fd6161a12448.
+            assert!(data_sources.last().and_then(|d| d.creation_block) <= ds.creation_block);
+
             data_sources.push(ds);
         }
 
