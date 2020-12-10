@@ -614,6 +614,7 @@ impl<'a, 'b, 'c>
             mapping,
             templates,
             context,
+            creation_block: _,
         } = data_source;
 
         Self {

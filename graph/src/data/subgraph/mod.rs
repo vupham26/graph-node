@@ -19,7 +19,7 @@ use web3::types::{Address, H256};
 use crate::components::link_resolver::LinkResolver;
 use crate::components::store::{Store, StoreError};
 use crate::components::subgraph::DataSourceTemplateInfo;
-use crate::data::graphql::{TryFromValue, ValueMap};
+use crate::data::graphql::TryFromValue;
 use crate::data::query::QueryExecutionError;
 use crate::data::schema::{Schema, SchemaImportError, SchemaValidationError};
 use crate::data::store::Entity;
@@ -744,6 +744,10 @@ pub struct BaseDataSource<M, T> {
 
     #[serde(default)]
     pub templates: Vec<T>, // Deprecated in manifest spec version 0.0.2
+
+    // `None` for static data sources.
+    #[serde(skip)]
+    pub creation_block: Option<u64>,
 }
 
 pub type UnresolvedDataSource = BaseDataSource<UnresolvedMapping, UnresolvedDataSourceTemplate>;
@@ -763,6 +767,7 @@ impl UnresolvedDataSource {
             mapping,
             templates,
             context,
+            creation_block,
         } = self;
 
         info!(logger, "Resolve data source"; "name" => &name, "source" => &source.start_block);
@@ -785,6 +790,7 @@ impl UnresolvedDataSource {
             mapping,
             templates,
             context,
+            creation_block,
         })
     }
 }
@@ -798,6 +804,7 @@ impl TryFrom<DataSourceTemplateInfo> for DataSource {
             template,
             params,
             context,
+            creation_block,
         } = info;
 
         // Obtain the address from the parameters
@@ -829,35 +836,8 @@ impl TryFrom<DataSourceTemplateInfo> for DataSource {
             },
             mapping: template.mapping,
             context,
-
+            creation_block: Some(creation_block),
             templates: Vec::new(),
-        })
-    }
-}
-
-impl TryFromValue for UnresolvedDataSource {
-    fn try_from_value(value: &q::Value) -> Result<Self, Error> {
-        let map = match value {
-            q::Value::Object(map) => Ok(map),
-            _ => Err(format_err!(
-                "Cannot parse value into a data source entity: {:?}",
-                value
-            )),
-        }?;
-
-        let source_entity: EthereumContractSourceEntity = map.get_required("source")?;
-        let mapping_entity: EthereumContractMappingEntity = map.get_required("mapping")?;
-        let templates: Vec<EthereumContractDataSourceTemplateEntity> =
-            map.get_optional("templates")?.unwrap_or_default();
-
-        Ok(Self {
-            kind: map.get_required("kind")?,
-            name: map.get_required("name")?,
-            network: map.get_optional("network")?,
-            source: source_entity.into(),
-            mapping: mapping_entity.into(),
-            templates: templates.into_iter().map(Into::into).collect(),
-            context: map.get_optional("context")?,
         })
     }
 }

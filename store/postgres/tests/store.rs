@@ -1212,6 +1212,7 @@ fn mock_data_source() -> DataSource {
             },
         }],
         context: None,
+        creation_block: None,
     }
 }
 
