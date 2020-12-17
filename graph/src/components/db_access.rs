@@ -39,7 +39,7 @@ impl DbAccess {
         Self { _private: () }
     }
 
-    pub fn wrap<T>(self, value: T) -> Accessed<T> {
+    pub fn wrap<'a, T>(&'a mut self, value: T) -> Accessed<'a, T> {
         Accessed {
             access: self,
             value,
@@ -51,12 +51,12 @@ impl DbAccess {
     }
 }
 
-pub struct Accessed<T> {
-    access: DbAccess,
+pub struct Accessed<'a, T> {
+    access: &'a mut DbAccess,
     value: T,
 }
 
-impl<T> fmt::Debug for Accessed<T>
+impl<'a, T> fmt::Debug for Accessed<'a, T>
 where
     T: fmt::Debug,
 {
@@ -65,7 +65,7 @@ where
     }
 }
 
-impl<T> fmt::Display for Accessed<T>
+impl<'a, T> fmt::Display for Accessed<'a, T>
 where
     T: fmt::Display,
 {
@@ -74,9 +74,9 @@ where
     }
 }
 
-impl<T> std::error::Error for Accessed<T> where T: std::error::Error {}
+impl<'a, T> std::error::Error for Accessed<'a, T> where T: std::error::Error {}
 
-impl<T> std::ops::Deref for Accessed<T> {
+impl<'a, T> std::ops::Deref for Accessed<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {

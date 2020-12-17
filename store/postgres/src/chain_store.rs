@@ -171,7 +171,7 @@ impl ChainStoreTrait for ChainStore {
         &self,
         blocks: Vec<LightEthereumBlock>,
         access: DbAccess,
-    ) -> Result<DbAccess, Accessed<Error>> {
+    ) -> Result<DbAccess, Error> {
         use crate::db_schema::ethereum_blocks::dsl::*;
 
         let conn = self.conn.clone();
@@ -199,9 +199,10 @@ impl ChainStoreTrait for ChainStore {
                 .values(values.clone())
                 .on_conflict(hash)
                 .do_nothing()
-                .execute(&*conn.get()?)?;
+                .execute(&*conn)?;
+            access = DbAccess::unwrap(conn);
         }
-        Ok(())
+        Ok(access)
     }
 
     fn attempt_chain_head_update(&self, ancestor_count: u64) -> Result<Vec<H256>, Error> {

@@ -28,7 +28,7 @@ mock! {
             E: From<Error> + Send + 'static,
             Self: Sized;
 
-        fn upsert_light_blocks(&self, blocks: Vec<LightEthereumBlock>) -> Result<(), Error>;
+        fn upsert_light_blocks(&self, blocks: Vec<LightEthereumBlock>, access: DbAccess) -> Result<DbAccess, Error>;
 
         fn attempt_chain_head_update(&self, ancestor_count: u64) -> Result<Vec<H256>, Error>;
 

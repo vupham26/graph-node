@@ -165,10 +165,12 @@ impl ConnectionPool {
     pub fn get(
         &self,
         access: DbAccess,
-    ) -> Result<Accessed<PooledConnection<ConnectionManager<PgConnection>>>, Accessed<Error>> {
+        // TODO: We want to return Accessed<Error>, but that makes some ?
+        // operators annoying for APIs.
+    ) -> Result<Accessed<PooledConnection<ConnectionManager<PgConnection>>>, Error> {
         match self.pool.get() {
             Ok(conn) => Ok(access.wrap(conn)),
-            Err(e) => Err(access.wrap(e)),
+            Err(e) => Err(e),
         }
     }
 
