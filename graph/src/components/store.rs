@@ -23,6 +23,9 @@ use crate::util::lfu_cache::LfuCache;
 
 use crate::components::server::index_node::VersionInfo;
 
+// DbAccess is in a separate mod to ensure the constructor private
+pub use super::db_access::{DbAccess, Accessed};
+
 lazy_static! {
     pub static ref SUBSCRIPTION_THROTTLE_INTERVAL: Duration =
         env::var("SUBSCRIPTION_THROTTLE_INTERVAL")

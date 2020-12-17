@@ -1,4 +1,7 @@
-use graph::prelude::{ChainStore as ChainStoreTrait, StoreError};
+use graph::{
+    components::store::{Accessed, DbAccess},
+    prelude::{ChainStore as ChainStoreTrait, StoreError},
+};
 
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
@@ -164,7 +167,11 @@ impl ChainStoreTrait for ChainStore {
         }))
     }
 
-    fn upsert_light_blocks(&self, blocks: Vec<LightEthereumBlock>) -> Result<(), Error> {
+    fn upsert_light_blocks(
+        &self,
+        blocks: Vec<LightEthereumBlock>,
+        access: DbAccess,
+    ) -> Result<DbAccess, Accessed<Error>> {
         use crate::db_schema::ethereum_blocks::dsl::*;
 
         let conn = self.conn.clone();
@@ -187,6 +194,7 @@ impl ChainStoreTrait for ChainStore {
             );
 
             // Insert blocks. On conflict do nothing, we don't want to erase transaction receipts.
+            let conn = conn.get(access)?;
             insert_into(ethereum_blocks)
                 .values(values.clone())
                 .on_conflict(hash)

@@ -1,6 +1,9 @@
 use diesel::pg::PgConnection;
-use diesel::r2d2::{self, event as e, ConnectionManager, HandleEvent, Pool};
+use diesel::r2d2::{
+    self, event as e, ConnectionManager, Error, HandleEvent, Pool, PooledConnection,
+};
 
+use graph::components::{db_access::Accessed, store::DbAccess};
 use graph::prelude::*;
 
 use std::fmt;
@@ -13,7 +16,6 @@ pub struct ConnectionPool {
     pool: Pool<ConnectionManager<PgConnection>>,
     pub(crate) wait_stats: PoolWaitStats,
 }
-
 struct ErrorHandler(Logger, Counter);
 
 impl Debug for ErrorHandler {
@@ -101,14 +103,6 @@ impl HandleEvent for EventHandler {
     }
 }
 
-impl std::ops::Deref for ConnectionPool {
-    type Target = Pool<ConnectionManager<PgConnection>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.pool
-    }
-}
-
 impl ConnectionPool {
     pub fn create(
         shard_name: &str,
@@ -166,5 +160,26 @@ impl ConnectionPool {
             .unwrap();
         info!(logger_store, "Pool successfully connected to Postgres");
         ConnectionPool { pool, wait_stats }
+    }
+
+    pub fn get(
+        &self,
+        access: DbAccess,
+    ) -> Result<Accessed<PooledConnection<ConnectionManager<PgConnection>>>, Accessed<Error>> {
+        match self.pool.get() {
+            Ok(conn) => Ok(access.wrap(conn)),
+            Err(e) => Err(access.wrap(e)),
+        }
+    }
+
+    pub fn get_timeout(
+        &self,
+        timeout: Duration,
+        access: DbAccess,
+    ) -> Result<Accessed<PooledConnection<ConnectionManager<PgConnection>>>, Accessed<Error>> {
+        match self.pool.get_timeout(timeout) {
+            Ok(conn) => Ok(access.wrap(conn)),
+            Err(e) => Err(access.wrap(e)),
+        }
     }
 }
